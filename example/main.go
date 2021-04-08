@@ -20,11 +20,12 @@ import (
 )
 
 func main() {
-	pram.SetLogger(log.Default())
+	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
+	pram.SetLogger(logger)
 
 	cfg, err := config.LoadDefaultConfig(context.Background())
 	if err != nil {
-		log.Fatalln(err)
+		logger.Fatalln(err)
 	}
 
 	snsClient := newLocalStackSNS(cfg)
@@ -43,7 +44,7 @@ func main() {
 
 	go func() {
 		<-c
-		log.Println("shutting down")
+		logger.Println("shutting down")
 		cancel()
 	}()
 
@@ -78,7 +79,7 @@ func main() {
 	}()
 
 	wg.Wait()
-	log.Println("done")
+	logger.Println("done")
 }
 
 func newLocalStackSNS(cfg aws.Config) *sns.Client {
@@ -101,6 +102,6 @@ func (h *handler) Message() proto.Message {
 
 func (h *handler) Handle(ctx context.Context, m proto.Message, md pram.Metadata) error {
 	tm := m.(*testpb.Message)
-	log.Println("handled:", tm.Value)
+	pram.Logf("handled: %v", tm.Value)
 	return nil
 }

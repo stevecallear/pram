@@ -1,5 +1,9 @@
 # pram
-`pram` offers a wrapper around AWS SNS/SQS to simplify the implementation of messaging patterns using Google Protobuf.
+[![Build Status](https://travis-ci.org/stevecallear/pram.svg?branch=master)](https://travis-ci.org/stevecallear/pram)
+[![codecov](https://codecov.io/gh/stevecallear/pram/branch/master/graph/badge.svg)](https://codecov.io/gh/stevecallear/pram)
+[![Go Report Card](https://goreportcard.com/badge/github.com/stevecallear/pram)](https://goreportcard.com/report/github.com/stevecallear/pram)
+
+`pram` provides a lightweight messaging framework using AWS SNS/SQS and Google Protobuf with convention based infrastructure creation.
 
 ## Publisher
 `Publisher` publishes messages to the appropriate topic. The topic ARN is resolved using the `PublisherOptions.TopicARNFn` function. A `Registry` instance can be used to resolve/create infrastucture by convention.
@@ -118,10 +122,11 @@ s.Subscribte(ctx, new(handler))
 ```
 
 ## Logging
-Info level logs, such as infrastructure creation and message publish/receive can be output by providing a `pram.Logger` implementation to `pram.SetLogger`. This can be used to understand the underlying AWS SDK calls being made. For example, the following can be used to log to the default `log` logger.
+Info level logs, such as infrastructure creation and message publish/receive can be output by providing a `pram.Logger` implementation to `pram.SetLogger`. This can be used to understand the underlying AWS SDK calls being made. For example, the following configuration uses a standard library logger.
 
 ```
-pram.SetLogger(log.Default())
+l := log.New(os.Stdout, "", log.Ldate|log.Ltime)
+pram.SetLogger(l)
 ```
 
 In the case of message publishing, registry and handler errors are returned immediately to the calling code, so can be handled in the usual manner. For message subscriptions, however, the `Subscribe` function will only return an error if the required queue cannot be resolved. Handler and AWS SDK errors will not be returned. To log these errors, an handler should be supplied when creating the subscriber.
