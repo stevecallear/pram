@@ -1,0 +1,8 @@
+syntax = "proto3";
+package pram.test;
+
+option go_package = "github.com/stevecallear/pram/proto/testpb";
+
+message Message {
+    string value = 1;
+}

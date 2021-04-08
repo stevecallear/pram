@@ -1,0 +1,15 @@
+syntax = "proto3";
+package pram;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/any.proto";
+
+option go_package = "github.com/stevecallear/pram/proto/prampb";
+
+message Message {
+    string id = 1;
+    string type = 2;
+    string correlation_id = 3;
+    google.protobuf.Timestamp timestamp = 4;
+    google.protobuf.Any body = 5;
+};
