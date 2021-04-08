@@ -19,57 +19,74 @@ type (
 
 	// Registry represents an infrastructure registry
 	Registry struct {
-		service          *aws.Service
-		store            Store
-		topicNameFn      func(proto.Message) string
-		queueNameFn      func(proto.Message) string
-		errorQueueNameFn func(proto.Message) string
+		service *aws.Service
+		store   Store
+		topic   TopicOptions
+		queue   QueueOptions
 	}
 
 	// RegistryOptions represents a set of registry options
 	RegistryOptions struct {
-		TopicNameFn      func(proto.Message) string
-		QueueNameFn      func(proto.Message) string
-		ErrorQueueNameFn func(proto.Message) string
-		Store            Store
+		Store Store
+		Topic TopicOptions
+		Queue QueueOptions
+	}
+
+	// TopicOptions represents a set of topic options
+	TopicOptions struct {
+		NameFn func(proto.Message) string
+	}
+
+	// QueueOptions represents a set of queue options
+	QueueOptions struct {
+		NameFn          func(proto.Message) string
+		ErrorNameFn     func(proto.Message) string
+		MaxReceiveCount int
 	}
 )
 
-// NewRegistry returns a new registry
-func NewRegistry(snsc SNS, sqsc SQS, optFns ...func(*RegistryOptions)) *Registry {
-	opts := RegistryOptions{
-		TopicNameFn: func(m proto.Message) string {
+var defaultRegistryOptions = RegistryOptions{
+	Topic: TopicOptions{
+		NameFn: func(m proto.Message) string {
 			return MessageName(m)
 		},
-		QueueNameFn: func(m proto.Message) string {
+	},
+	Queue: QueueOptions{
+		NameFn: func(m proto.Message) string {
 			return MessageName(m)
 		},
-		ErrorQueueNameFn: func(m proto.Message) string {
+		ErrorNameFn: func(m proto.Message) string {
 			return MessageName(m) + "_error"
 		},
-	}
+		MaxReceiveCount: 5,
+	},
+}
+
+// NewRegistry returns a new registry
+func NewRegistry(snsc SNS, sqsc SQS, optFns ...func(*RegistryOptions)) *Registry {
+	o := defaultRegistryOptions
 	for _, fn := range optFns {
-		fn(&opts)
+		fn(&o)
 	}
 
-	if opts.Store == nil {
-		opts.Store = new(store.InMemoryStore)
+	if o.Store == nil {
+		o.Store = new(store.InMemoryStore)
 	}
 
 	return &Registry{
-		service:          aws.NewService(snsc, sqsc, Logf),
-		store:            opts.Store,
-		topicNameFn:      opts.TopicNameFn,
-		queueNameFn:      opts.QueueNameFn,
-		errorQueueNameFn: opts.ErrorQueueNameFn,
+		service: aws.NewService(snsc, sqsc, Logf),
+		store:   o.Store,
+		topic:   o.Topic,
+		queue:   o.Queue,
 	}
 }
 
 // TopicARN returns the topic arn for the specified message, or registers it if it does not exist
 func (r *Registry) TopicARN(ctx context.Context, m proto.Message) (string, error) {
-	return r.store.GetOrSetTopicARN(ctx, r.topicNameFn(m), func() (string, error) {
+	tn := r.topic.NameFn(m)
+	return r.store.GetOrSetTopicARN(ctx, tn, func() (string, error) {
 		res, err := r.service.EnsureTopic(ctx, aws.EnsureTopicRequest{
-			TopicName: r.topicNameFn(m),
+			TopicName: tn,
 		})
 		if err != nil {
 			return "", err
@@ -81,9 +98,10 @@ func (r *Registry) TopicARN(ctx context.Context, m proto.Message) (string, error
 
 // QueueURL returns the queue url for the specified message, or registers it if it does not exist
 func (r *Registry) QueueURL(ctx context.Context, m proto.Message) (string, error) {
-	ta, err := r.store.GetOrSetTopicARN(ctx, r.topicNameFn(m), func() (string, error) {
+	tn := r.topic.NameFn(m)
+	ta, err := r.store.GetOrSetTopicARN(ctx, tn, func() (string, error) {
 		res, err := r.service.EnsureTopic(ctx, aws.EnsureTopicRequest{
-			TopicName: r.topicNameFn(m),
+			TopicName: tn,
 		})
 		if err != nil {
 			return "", err
@@ -95,12 +113,13 @@ func (r *Registry) QueueURL(ctx context.Context, m proto.Message) (string, error
 		return "", err
 	}
 
-	return r.store.GetOrSetQueueURL(ctx, r.queueNameFn(m), func() (string, error) {
+	qn := r.queue.NameFn(m)
+	return r.store.GetOrSetQueueURL(ctx, qn, func() (string, error) {
 		res, err := r.service.EnsureSubscription(ctx, aws.EnsureSubscriptionRequest{
 			TopicARN:        ta,
-			QueueName:       r.queueNameFn(m),
-			ErrorQueueName:  r.errorQueueNameFn(m),
-			MaxReceiveCount: 5, // todo: config
+			QueueName:       qn,
+			ErrorQueueName:  r.queue.ErrorNameFn(m),
+			MaxReceiveCount: r.queue.MaxReceiveCount,
 		})
 		if err != nil {
 			return "", err
@@ -124,13 +143,13 @@ func WithStore(s Store) func(*RegistryOptions) {
 //  error: stage-service-package-Message_error
 func WithPrefixNaming(stage, service string) func(*RegistryOptions) {
 	return func(o *RegistryOptions) {
-		o.TopicNameFn = func(m proto.Message) string {
+		o.Topic.NameFn = func(m proto.Message) string {
 			return fmt.Sprintf("%s-%s", stage, MessageName(m))
 		}
-		o.QueueNameFn = func(m proto.Message) string {
+		o.Queue.NameFn = func(m proto.Message) string {
 			return fmt.Sprintf("%s-%s-%s", stage, service, MessageName(m))
 		}
-		o.ErrorQueueNameFn = func(m proto.Message) string {
+		o.Queue.ErrorNameFn = func(m proto.Message) string {
 			return fmt.Sprintf("%s-%s-%s_error", stage, service, MessageName(m))
 		}
 	}
