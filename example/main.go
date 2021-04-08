@@ -34,7 +34,7 @@ func main() {
 	reg := pram.NewRegistry(snsClient, sqsClient, pram.WithPrefixNaming("local", "example"))
 	pub := pram.NewPublisher(snsClient, pram.WithTopicRegistry(reg))
 	sub := pram.NewSubscriber(sqsClient, pram.WithQueueRegistry(reg), pram.WithErrorHandler(func(err error) {
-		pram.Logf("subscriber: %v", err)
+		pram.Log(err)
 	}))
 
 	c := make(chan os.Signal)
@@ -56,7 +56,7 @@ func main() {
 
 		err := sub.Subscribe(ctx, new(handler))
 		if err != nil {
-			pram.Logf("subscribe: %v", err)
+			pram.Log(err)
 		}
 	}()
 
@@ -72,7 +72,7 @@ func main() {
 				msg := &testpb.Message{Value: uuid.NewString()}
 				err := pub.Publish(ctx, msg)
 				if err != nil {
-					pram.Logf("publish: %v", err)
+					pram.Log(err)
 				}
 			}
 		}

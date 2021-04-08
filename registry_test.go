@@ -178,21 +178,21 @@ func TestWithPrefixNaming(t *testing.T) {
 		pram.WithPrefixNaming("stage", "service")(&o)
 
 		exp := "stage-pram-test-Message"
-		act := o.TopicNameFn(new(testpb.Message))
+		act := o.Topic.NameFn(new(testpb.Message))
 
 		if act != exp {
 			t.Errorf("got %s, expected %s", act, exp)
 		}
 
 		exp = "stage-service-pram-test-Message"
-		act = o.QueueNameFn(new(testpb.Message))
+		act = o.Queue.NameFn(new(testpb.Message))
 
 		if act != exp {
 			t.Errorf("got %s, expected %s", act, exp)
 		}
 
 		exp = "stage-service-pram-test-Message_error"
-		act = o.ErrorQueueNameFn(new(testpb.Message))
+		act = o.Queue.ErrorNameFn(new(testpb.Message))
 
 		if act != exp {
 			t.Errorf("got %s, expected %s", act, exp)

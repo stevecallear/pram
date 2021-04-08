@@ -3,7 +3,7 @@
 [![codecov](https://codecov.io/gh/stevecallear/pram/branch/master/graph/badge.svg)](https://codecov.io/gh/stevecallear/pram)
 [![Go Report Card](https://goreportcard.com/badge/github.com/stevecallear/pram)](https://goreportcard.com/report/github.com/stevecallear/pram)
 
-`pram` provides a lightweight messaging framework using AWS SNS/SQS and Google Protobuf with convention based infrastructure creation.
+`pram` is a lightweight messaging framework using AWS SNS/SQS and Google Protobuf with convention based infrastructure creation.
 
 ## Publisher
 `Publisher` publishes messages to the appropriate topic. The topic ARN is resolved using the `PublisherOptions.TopicARNFn` function. A `Registry` instance can be used to resolve/create infrastucture by convention.
@@ -42,7 +42,7 @@ func (h *handler) Message() proto.Message {
 
 func (h *handler) Handle(ctx context.Context, m proto.Message, md pram.Metadata) error {
 	tm := m.(*testpb.Message)
-    // handle the message
+	// handle the message
 	return nil
 }
 ```
