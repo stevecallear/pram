@@ -1,5 +1,5 @@
 # pram
-[![Build Status](https://travis-ci.org/stevecallear/pram.svg?branch=master)](https://travis-ci.org/stevecallear/pram)
+[![Build Status](https://github.com/stevecallear/pram/actions/workflows/build.yml/badge.svg)](https://github.com/stevecallear/pram/actions/workflows/build.yml)
 [![codecov](https://codecov.io/gh/stevecallear/pram/branch/master/graph/badge.svg)](https://codecov.io/gh/stevecallear/pram)
 [![Go Report Card](https://goreportcard.com/badge/github.com/stevecallear/pram)](https://goreportcard.com/report/github.com/stevecallear/pram)
 
